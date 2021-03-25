@@ -274,11 +274,29 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="ppo_tf2_cartpole.py" />
+    <Compile Include="ppo_tf2_cartpole.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Gym.NET\src\Gym.Environments\Gym.Environments.csproj">
+      <Project>{02fab47d-3770-4989-8358-158762422827}</Project>
+      <Name>Gym.Environments</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Gym.NET\src\Gym.Rendering.WinForm\Gym.Rendering.WinForm.csproj">
+      <Project>{5ce98392-79a0-4851-aadf-c64d47ee13fd}</Project>
+      <Name>Gym.Rendering.WinForm</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Gym.NET\src\Gym\Gym.csproj">
+      <Project>{0d91077e-2941-48bc-a4dd-b7f35f81b0eb}</Project>
+      <Name>Gym</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RandomChoice\RandomChoice.csproj">
+      <Project>{858b6380-19b9-40db-bc46-5ccff6ebfc45}</Project>
+      <Name>RandomChoice</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
   <ProjectExtensions>

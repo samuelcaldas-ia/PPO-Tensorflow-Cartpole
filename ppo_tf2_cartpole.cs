@@ -55,22 +55,23 @@ class Model(keras.Model){
     {
         //super().__init__()
         // var layers = keras.layers;
-        this.dense1 = keras.layers.Dense(64, activation: "relu", kernel_initializer: keras.initializers.he_normal());
-        this.dense2 = keras.layers.Dense(64, activation: "relu", kernel_initializer: keras.initializers.he_normal());
-        this.value = keras.layers.Dense(1);
-        this.policy_logits = keras.layers.Dense(num_actions);
-
+        dense1 = keras.layers.Dense(64, activation: "relu", kernel_initializer: keras.initializers.he_normal());
+        dense2 = keras.layers.Dense(64, activation: "relu", kernel_initializer: keras.initializers.he_normal());
+        value = keras.layers.Dense(1);
+        policy_logits = keras.layers.Dense(num_actions);
     }
+
     static object call(object inputs)
     {
-        var x = this.dense1(inputs);
-        x = this.dense2(x);
-        return this.value(x), this.policy_logits(x);
+        var x = dense1(inputs);
+        x = dense2(x);
+        return value(x), policy_logits(x);
 
     }
+
     static object action_value(object state)
     {
-        var (value, logits) = this.predict_on_batch(state);
+        var (value, logits) = predict_on_batch(state);
         dist = tfp.distributions.Categorical(logits: logits);
         action = dist.sample();
         return (action, value);
@@ -85,9 +86,8 @@ class Model(keras.Model){
         probs = tf.nn.softmax(policy_logits);
         entropy_loss = -tf.reduce_mean(keras.losses.categorical_crossentropy(probs, probs));
         return entropy_loss * ent_discount_val;
-
-
     }
+
     static object actor_loss(object advantages, object old_probs, object action_inds, object policy_logits)){
         probs = tf.nn.softmax(policy_logits);
         new_probs = tf.gather_nd(probs, action_inds);
@@ -96,9 +96,8 @@ class Model(keras.Model){
 
         policy_loss = -tf.reduce_mean(tf.math.minimum(ratio * advantages, tf.clip_by_value(ratio, 1.0 - CLIP_VALUE, 1.0 + CLIP_VALUE) * advantages));
         return policy_loss;
-
-
     }
+
     static object train_model(object action_inds, object old_probs, object states, object advantages, object discounted_rewards, object optimizer, object ent_discount_val)){
         using (var tape = tf.GradientTape())
         {
@@ -111,8 +110,8 @@ class Model(keras.Model){
         }
         optimizer.apply_gradients(zip(grads, model.trainable_variables));
         return (tot_loss, c_loss, act_loss, ent_loss);
-
     }
+
     static object get_advantages(object rewards, object dones, object values, object next_value) {
     discounted_rewards = np.array(rewards + "[next_value[0]]");
 
@@ -136,32 +135,32 @@ optimizer = keras.optimizers.Adam(learning_rate: LR);
 
 train_writer = tf.summary.create_file_writer(STORE_PATH + "/PPO-CartPole_{dt.datetime.now().strftime(' % d % m % Y % H % M')}");
 
-num_steps = 10000000;
+var num_steps = 10000000;
 episode_reward_sum = 0;
 state = env.Reset();
 episode = 1;
 total_loss = null;
-for (int step in range(num_steps)) {
-    rewards = new List<double>();
-    actions = new List<double>();
-    values = new List<double>();
-    states = new List<double>();
-    dones = new List<double>();
-    probs = new List<double>();
-    for (int _ in range(BATCH_SIZE)) {
-        var (_, policy_logits) = model(state.reshape(1, -1))
+for (int step=0; step <= num_steps; step++) {
+    var rewards = new List<double>();
+    var actions = new List<double>();
+    var values = new List<double>();
+    var states = new List<double>();
+    var dones = new List<double>();
+    var probs = new List<double>();
+    for (int i=0; i <=BATCH_SIZE; i++) {
+        var (_, policy_logits) = model(state.reshape(1, -1));
 
-        var (action, value) = model.action_value(state.reshape(1, -1))
-        var (new_state, reward, done, _) = env.Step(action.numpy()[0])
+        var (action, value) = model.action_value(state.reshape(1, -1));
+        var (new_state, reward, done, _) = env.Step(action.numpy()[0]);
 
-        actions.Add(action)
-        values.Add(value[0])
-        states.Add(state)
-        dones.Add(done)
-        probs.Add(policy_logits)
-        episode_reward_sum += reward
+        actions.Add(action);
+        values.Add(value[0]);
+        states.Add(state);
+        dones.Add(done);
+        probs.Add(policy_logits);
+        episode_reward_sum += reward;
 
-        state = new_state
+        state = new_state;
 
         if (done) {
             rewards.Add(0.0);
@@ -169,7 +168,7 @@ for (int step in range(num_steps)) {
             if (total_loss != 0)
                 Console.WriteLine("Episode: {episode}, latest episode reward: {episode_reward_sum}, ", "total loss: {np.mean(total_loss)}, critic loss: {np.mean(c_loss)}, ", "actor loss: {np.mean(act_loss)}, entropy loss {np.mean(ent_loss)}");
             using (train_writer.as_default()) {
-                tf.summary.scalar("rewards", episode_reward_sum, episode)
+                tf.summary.scalar("rewards", episode_reward_sum, episode);
             }
             episode_reward_sum = 0;
 
@@ -190,7 +189,7 @@ for (int step in range(num_steps)) {
     act_loss = np.zeros((NUM_TRAIN_EPOCHS));
     c_loss = np.zeros(((NUM_TRAIN_EPOCHS)));
     ent_loss = np.zeros((NUM_TRAIN_EPOCHS));
-    for (int epoch in range(NUM_TRAIN_EPOCHS)) {
+    for (int epoch; epoch <= NUM_TRAIN_EPOCHS; epoch++) {
         loss_tuple = train_model(action_inds, tf.gather_nd(probs, action_inds), states, advantages, discounted_rewards, optimizer, ent_discount_val);
         total_loss[epoch] = loss_tuple[0];
         c_loss[epoch] = loss_tuple[1];
